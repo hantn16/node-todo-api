@@ -7,7 +7,7 @@ const { User } = require('./models/user');
 
 var app = express();
 app.use(bodyParser.json());
-app.post('/todo/add', (req, res) => {
+app.post('/todos/add', (req, res) => {
     const newTodo = new Todo({
         text: req.body.text
     });
@@ -18,6 +18,13 @@ app.post('/todo/add', (req, res) => {
     })
 });
 
+app.get('/todos', (req, res) => {
+    Todo.find().then((todos) => {
+        res.send(todos);
+    }, (err) => {
+        res.status(400).send(err);
+    });
+});
 app.post('/users/add', (req, res) => {
     const newUser = new User({ email: req.body.email });
     newUser.save().then((doc) => {
@@ -30,4 +37,4 @@ app.listen(3000, () => {
     console.log('Started on port 3000');
 });
 
-module.exports = {app};
+module.exports = { app };
