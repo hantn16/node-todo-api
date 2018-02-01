@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 
 const { app } = require('../server');
 const { Todo } = require('../models/todo');
-const {User} = require('../models/user');
+const { User } = require('../models/user');
 const { populateTodos, seedTodos, seedUsers, populateUsers } = require('./seed/seed');
 
 beforeEach(populateUsers);
@@ -206,7 +206,7 @@ describe('POST /users', () => {
                 if (err) {
                     return done(err)
                 }
-                User.findOne({email: user.email}).then((res) => {
+                User.findOne({ email: user.email }).then((res) => {
                     expect(res).toExist();
                     expect(res.password).toNotBe(user.password);
                     done();
@@ -214,27 +214,27 @@ describe('POST /users', () => {
             });
     });
     it('should return validation errors if request invalid', (done) => {
-        var user ={
+        var user = {
             _id: new ObjectID(),
             email: 'hantn17@gmail.com',
             password: 'anh16'
         };
         request(app)
-        .post('/users')
-        .send(user)
-        .expect(400)
-        .expect((res) => {
-            expect(res.body._id).toNotExist();
-            expect(res.body.email).toNotExist();
-        }).end((err) => {
-            if (err) {
-                return done(err);
-            }
-            User.findOne({email: user.email}).then((res) => {
-                expect(res).toNotExist();
-                done();
+            .post('/users')
+            .send(user)
+            .expect(400)
+            .expect((res) => {
+                expect(res.body._id).toNotExist();
+                expect(res.body.email).toNotExist();
+            }).end((err) => {
+                if (err) {
+                    return done(err);
+                }
+                User.findOne({ email: user.email }).then((res) => {
+                    expect(res).toNotExist();
+                    done();
+                });
             });
-        });
     });
     it('should not create user if email in use', (done) => {
         var user = {
@@ -243,56 +243,74 @@ describe('POST /users', () => {
             password: 'anhhan16'
         };
         request(app)
-        .post('/users')
-        .send(user)
-        .expect(400)
-        .expect((res) => {
-            expect(res.body._id).toNotExist();
-            expect(res.body.email).toNotExist();
-        }).end((err) => {
-            if (err) {
-                return done(err);
-            }
-            User.find({email: user.email}).then((users) => {
-                expect(users.length).toBe(1);
-                done();
-            }).catch((e)=> done(e));
-        });
+            .post('/users')
+            .send(user)
+            .expect(400)
+            .expect((res) => {
+                expect(res.body._id).toNotExist();
+                expect(res.body.email).toNotExist();
+            }).end((err) => {
+                if (err) {
+                    return done(err);
+                }
+                User.find({ email: user.email }).then((users) => {
+                    expect(users.length).toBe(1);
+                    done();
+                }).catch((e) => done(e));
+            });
     });
 });
-describe('POST /users/login',() => {
-    it('should return an user when email, password is correct',(done) => {
+describe('POST /users/login', () => {
+    it('should return an user when email, password is correct', (done) => {
         const email = seedUsers[1].email;
         const password = seedUsers[1].password;
         request(app)
-        .post('/users/login')
-        .send({email,password})
-        .expect(200)
-        .expect((res) => {
-            expect(res.body.email).toBe(email);
-            expect(res.headers['x-auth']).toExist();
-        }).end((err,res) => {
-            if (err) {
-                return done(err);
-            }
-            User.findById(seedUsers[1]._id).then((user) => {
-                expect(user.tokens[0]).toInclude({
-                    access: 'auth',
-                    token: res.headers['x-auth']
-                });
-                done();
-            }).catch((e) => done(e))
-        });
+            .post('/users/login')
+            .send({ email, password })
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.email).toBe(email);
+                expect(res.headers['x-auth']).toExist();
+            }).end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+                User.findById(seedUsers[1]._id).then((user) => {
+                    expect(user.tokens[0]).toInclude({
+                        access: 'auth',
+                        token: res.headers['x-auth']
+                    });
+                    done();
+                }).catch((e) => done(e))
+            });
     });
-    it('should return 400 when email or password is not correct',(done) => {
-        const email = seedUsers[0].email+"abc";
+    it('should return 400 when email or password is not correct', (done) => {
+        const email = seedUsers[0].email + "abc";
         const password = seedUsers[0].password;
         request(app)
-        .post('/users/login')
-        .send({email,password})
-        .expect(400)
-        .expect((res) => {
-            expect(res.body.email).toNotExist();
-        }).end(done);
+            .post('/users/login')
+            .send({ email, password })
+            .expect(400)
+            .expect((res) => {
+                expect(res.body.email).toNotExist();
+            }).end(done);
     })
+});
+describe('DELETE /users/me/token', () => {
+    it('should remove auth token on logout', (done) => {
+        //DELETE /users/me/token
+        request(app)
+            .delete('/users/me/token')
+            .set('x-auth', seedUsers[0].tokens[0].token)
+            .expect(200)
+            .end((err,res) => {
+                if (err) {
+                    return done(err);
+                }
+                User.findById(seedUsers[0]._id).then((user) => {
+                    expect(user.tokens.length).toBe(0);
+                    done();
+                }).catch((e) => done(e));
+            });
+    });
 });
