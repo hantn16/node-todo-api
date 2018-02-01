@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
@@ -66,6 +67,24 @@ UserSchema.statics.findByToken = function(token) {
         _id: decoded._id,
         "tokens.token" : token,
         "tokens.access": "auth"
+    });
+};
+
+UserSchema.statics.findByCredentials = function(email,password) {
+    var User = this;    
+    return User.findOne({email}).then((user) => {
+        if (!user) {
+            return Promise.reject({message: 'email is not exist'});
+        }
+        return new Promise((resolve,reject) => {
+            bcrypt.compare(password,user.password).then((result) => {
+                if (result) {
+                    resolve(user);
+                }
+                reject({message:'Wrong password'});
+            })
+        });
+        
     });
 };
 
